@@ -11,16 +11,12 @@ import java.lang.reflect.Method;
 public class Configuration {
 	private static final String DEFAULT_CONFIG_FILE = "application.properties";
 	Object configObj;
+	Properties properties;
 
-	// TODO for HW #51
 	public Configuration(Object configObj, String configFile) throws Exception {
 		this.configObj = configObj;
-		// TODO
-		/* prototype */
-		// Properties properties = new Properties();
-		// properties.load(new FileInputStream(configFile));
-		// String value = properties.getProperty("<property name>", "<defaultValue>");
-		// <property name>=<value>
+		properties = new Properties();
+		properties.load(new FileInputStream(configFile));
 	}
 
 	public Configuration(Object configObject) throws Exception {
@@ -33,23 +29,28 @@ public class Configuration {
 	}
 
 	void injection(Field field) {
-		Value valueAnnotation = field.getAnnotation(Value.class);
 		// value structure: <property name>:<default value>
+		Value valueAnnotation = field.getAnnotation(Value.class);
 		Object value = getValue(valueAnnotation.value(), field.getType().getSimpleName().toLowerCase());
 		setValue(field, value);
-
 	}
 
-	private Object getValue(String value, String typeName) {
-		// TODO complete method is HW #51
-		String[] tokens = value.split(":");
-		String propertyName = tokens[0];
-		String defaultValue = tokens[1];
-		// TODO if no property in configuration file and no default value, then an
-		// exception should be thrown
+	private Object getValue(String annotationValue, String typeName) {
+		String value = null;
+		String[] tokens = annotationValue.split(":");
+		String propertyName;		
+		propertyName = tokens[0];
+
+		try {
+			String propertyValue = properties.getProperty(propertyName);
+			value = propertyValue != null ? propertyValue : tokens[1];
+		} catch (Exception e) {
+			throw new RuntimeException("No property in configuration file and no default value ");
+		}
+
 		try {
 			Method method = getClass().getDeclaredMethod(typeName + "Convertion", String.class);
-			return method.invoke(this, defaultValue); // FIXME for HW #51
+			return method.invoke(this, value);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
