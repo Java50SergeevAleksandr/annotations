@@ -8,6 +8,10 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+/**
+ * Class injects values from properties configuration file into specified object
+ * using annotations {@value}
+ */
 public class Configuration {
 	private static final String DEFAULT_CONFIG_FILE = "application.properties";
 	Object configObj;
@@ -15,8 +19,10 @@ public class Configuration {
 
 	public Configuration(Object configObj, String configFile) throws Exception {
 		this.configObj = configObj;
-		properties = new Properties();
-		properties.load(new FileInputStream(configFile));
+		try (InputStream ins = new FileInputStream(configFile)) {
+			properties = new Properties();
+			properties.load(ins);
+		}
 	}
 
 	public Configuration(Object configObject) throws Exception {
@@ -38,18 +44,16 @@ public class Configuration {
 	private Object getValue(String annotationValue, String typeName) {
 		String value = null;
 		String[] tokens = annotationValue.split(":");
-		String propertyName;		
-		propertyName = tokens[0];
+		String propertyName = tokens[0];
 
 		try {
-			String propertyValue = properties.getProperty(propertyName);
-			value = propertyValue != null ? propertyValue : tokens[1];
+			value = properties.getProperty(propertyName, tokens[1]);
 		} catch (Exception e) {
 			throw new RuntimeException("No property in configuration file and no default value ");
 		}
 
 		try {
-			Method method = getClass().getDeclaredMethod(typeName + "Convertion", String.class);
+			Method method = getClass().getDeclaredMethod(typeName + "Conversion", String.class);
 			return method.invoke(this, value);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -67,23 +71,23 @@ public class Configuration {
 	}
 
 	// assumption: supported data types: int, long, float, double, String
-	Integer intConvertion(String value) {
+	Integer intConversion(String value) {
 		return Integer.valueOf(value);
 	}
 
-	Long longConvertion(String value) {
+	Long longConversion(String value) {
 		return Long.valueOf(value);
 	}
 
-	Float floatConvertion(String value) {
+	Float floatConversion(String value) {
 		return Float.valueOf(value);
 	}
 
-	Double doubleConvertion(String value) {
+	Double doubleConversion(String value) {
 		return Double.valueOf(value);
 	}
 
-	String stringConvertion(String value) {
+	String stringConversion(String value) {
 		return value;
 	}
 
